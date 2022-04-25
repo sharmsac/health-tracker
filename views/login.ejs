@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>
+		KEAN Health Tracker
+	</title>
+	<link rel="stylesheet" type="text/css" href="index.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+        <a class="navbar-brand">
+            <img src="kean_logo.png" width="40" height="40" alt="">
+            KEAN Health Tracker
+        </a>
+            <form class="d-flex" action="/" method="get">
+                <button class="btn btn-dark" type="submit">Home</button>
+            </form>
+        </div>
+    </nav>
+
+</head>
+<body>
+
+<div id = "Search">
+    <p class="header">Portal Login</p>
+	<form class="input-boxes" action="/upload" method="post">
+
+        <input name="username" class="form-control" type="text" placeholder="Username" aria-label="default input example">
+
+        <input name="password" class="form-control" type="password" placeholder="Password" aria-label="default input example">
+
+        <button type="submit" class="btn btn-dark submit">Login</button>
+	</form>
+
+    <% if(status != "ok"){ %>
+        <p class="error" style="color:#FF0000"><%=error %></p>
+    <% } %>
+</div>
+
+</body>
+</html>

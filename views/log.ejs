@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>
+		KEAN Health Tracker
+	</title>
+	<link rel="stylesheet" type="text/css" href="/index.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+        <a class="navbar-brand">
+            <img src="/kean_logo.png" width="40" height="40" alt="">
+            KEAN Health Tracker
+        </a>
+            <form class="d-flex" action="/login" method="get">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+</head>
+<body>
+
+    <div id = "Search">
+        <p class="header">Upload Logs</p>
+        <% if(status == "ok") { %>
+            <p2 class="log" style="color: green;">Data has been updated and uploaded in the database</p2><br>
+            <!-- <p2 class="log">Updated Entries: <%=updated_entries%></p2><br>
+            <p3 class="log">Inserted Entries: <%=new_entries%></p3><br>
+        <% } else { %>
+            <p2 class="log"><%=error%></p2>
+        <% } %>             -->
+    </div>
+
+</body>
+</html>
