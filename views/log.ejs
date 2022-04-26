@@ -26,11 +26,13 @@
         <p class="header">Upload Logs</p>
         <% if(status == "ok") { %>
             <p2 class="log" style="color: green;">Data has been updated and uploaded in the database</p2><br>
-            <!-- <p2 class="log">Updated Entries: <%=updated_entries%></p2><br>
-            <p3 class="log">Inserted Entries: <%=new_entries%></p3><br>
+            <p2 class="log">Entries: <%=entries%></p2><br>
+            <p2 class="log">Overal Execution Time: <%=ov_performance%></p2><br>
+            <p2 class="log">Deletion Execution Time: <%=deletion_performance%></p2><br>
+            <p2 class="log">Insertion Execution Time: <%=insertion_performance%></p2><br>
         <% } else { %>
             <p2 class="log"><%=error%></p2>
-        <% } %>             -->
+        <% } %>             
     </div>
 
 </body>

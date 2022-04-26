@@ -7,6 +7,9 @@ router.post('/', async (req, res) => {
     first_name = req.body.first_name.toLowerCase()
     last_name = req.body.last_name.toLowerCase()
     birthday_date = req.body.birthday
+    
+    bday_split = birthday_date.split("-")
+    birthday_date = `${bday_split[1]}/${bday_split[2]}/${bday_split[0]}`
 
     http.get(`http://localhost:8080/getStudent?firstname=${first_name}&lastname=${last_name}&dob=${birthday_date}`, (resp) => {
         let data = '';
@@ -24,10 +27,10 @@ router.post('/', async (req, res) => {
                     status: "error"
                 }
                 res.render('search', info) 
+                return
             }
 
             data = JSON.parse(data)
-            console.log(data)
             if(data.id == null){
                 info = {
                     status: "error"

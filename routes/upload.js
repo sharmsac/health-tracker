@@ -5,7 +5,12 @@ const upload = require('express-fileupload')
 const csvtojson = require('csvtojson')
 const { render } = require('ejs')
 const http = require('http');
-
+const request = require('request')
+const { JSDOM } = require("jsdom");
+const { Console } = require('console')
+const { window } = new JSDOM();
+const cliProgress = require('cli-progress')
+ 
 router.post('/', async (req, res) => {
     http.get(`http://localhost:8080/getUser?username=${req.body.username.toLowerCase()}&password=${req.body.password}`, (resp) => {
         let data = '';
@@ -42,86 +47,146 @@ router.post('/', async (req, res) => {
 })
 
 async function csvtojsonfunc(csvData){
-    let json = {}
-    let existing_data_counter = 1
-    let data_entered_counter = 1
-    await csvtojson().fromString(csvData).then(async function(json_format){
+
+    var start_ov = window.performance.now();
+
+    let json;
+    list_of_students = []
+    await csvtojson({ignoreEmpty:true}).fromString(csvData).then(json_format =>{
         json = json_format
-        for await (var student of json){
-            let tempstudentdata = student
-            const query = studentsSchema.where({ student_id: Number(tempstudentdata["Student ID Number"])})
-            await query.findOne(async function(err, result) {
-                if(result){                        
-                    date_split = tempstudentdata.DOB.split('/')
+    })
 
-                    const filter = {
-                        student_id: Number(tempstudentdata["Student ID Number"])
-                    }
-                    const options = {
-                        upsert: true
-                    }
-                    const updateRecord = {
-                        $set: {
-                            first_name: tempstudentdata["First Name"].toLowerCase(),
-                            last_name: tempstudentdata["Last Name"].toLowerCase(),
-                            student_id: Number(tempstudentdata["Student ID Number"]),
-                            dob: {
-                                month: Number(date_split[0]),
-                                day: Number(date_split[1]),
-                                year: Number(date_split[2])
-                            },
-                            vaccinated: (tempstudentdata.Vaccinated.toLowerCase() == "yes"),
-                            approved: (tempstudentdata["Verified By Health Services"].toLowerCase() == "yes")
-                        }
-                    }
+    list_of_ids = new Set()
+    temparray = []
+    batch_counter = 0
+    for(x = 0; x <= json.length; x++){
 
-                    const result = await studentsSchema.updateOne(filter, updateRecord, options).catch(error => {
-                        console.log(error)
-                    })
+        if(batch_counter == 100 || x == json.length){
+            list_of_students.push(temparray)
+            temparray = []
+            batch_counter = 0
 
-                    existing_data_counter++;
-                }
-                else{
-                    date_split = tempstudentdata.DOB.split('/')
+            if(x == json.length){
+                break
+            }
+        }
 
-                    tempstudentsschema = new studentsSchema({
-                        first_name: tempstudentdata["First Name"].toLowerCase(),
-                        last_name: tempstudentdata["Last Name"].toLowerCase(),
-                        student_id: Number(tempstudentdata["Student ID Number"]),
-                        dob: {
-                            month: Number(date_split[0]),
-                            day: Number(date_split[1]),
-                            year: Number(date_split[2])
-                        },
-                        vaccinated: (tempstudentdata.Vaccinated.toLowerCase() == "yes"),
-                        approved: (tempstudentdata["Verified By Health Services"].toLowerCase() == "yes")
-                    }).save(function(error){
-                        data_entered_counter++;
-                    })
-                }
-            })
+        student = json[x]
+
+        if(list_of_ids.has(student.id.toString())){
+            info = {
+                status: "error",
+                error: "Duplicate entries in file"
+            }
+            return info
+        }
+
+        try{
+            req = {
+                "id": Number(student.id),
+                "firstname": student.firstname.toLowerCase(),
+                "lastname": student.lastname.toLowerCase(),
+                "dob": student.dob.toString(),
+                "isRecordSubmitted": student.isRecordSubmitted,
+                "isRecordApproved": student.isRecordApproved
+            }
+
+            list_of_ids.add(student.id.toString())
+            temparray.push(req)
+            batch_counter++
+        }
+        catch(error) {
+            info = {
+                status: "error",
+                error: error
+            }
+            return info
+        }
+    }
+
+    const bar1 = new cliProgress.SingleBar({}, cliProgress.rect)
+    
+    //Delete old data
+    var start = window.performance.now();
+    console.log("Deleting Records...")
+    await makeDeleteRequest({
+        url: 'http://localhost:8080/deleteAllStudents'
+    })
+    console.log("Records Deleted!")
+    var end = window.performance.now();
+    deletion_performance = (end-start).toFixed(2)
+
+    //Insert new data
+    var start = window.performance.now();
+    console.log("Inserting Records...")
+    sum = 0;
+    bar1.start(list_of_students.length, 0)
+    for(arr in list_of_students){
+        sum += list_of_students[arr].length
+        await makePostRequest(list_of_students[arr])
+        bar1.increment()
+    }
+    bar1.stop()
+    console.log("Records Inserted!")
+    var end = window.performance.now();
+    insertion_performance = (end-start).toFixed(2)
+    
+    var end_ov = window.performance.now();
+
+    info = {
+        status: "ok",
+        entries: sum,
+        deletion_performance: `${deletion_performance}ms`,
+        insertion_performance: `${insertion_performance}ms`,
+        ov_performance: `${(end_ov-start_ov).toFixed(2)}ms`
+    }
+
+    return info
+}
+
+function makeDeleteRequest(path){
+    return new Promise ( function (resolve, reject) {
+        request.delete(path, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                resolve(body)
+            }
+            else{
+                reject(error)
+            }
+        });
+    }).catch(error=>{
+        if(error != null){
+            console.log(error)
         }
     })
-    return [existing_data_counter, data_entered_counter]
-    // setTimeout(function(){
-    //     console.log("done")
-    // }, 5000)
+}
+
+function makePostRequest(list_of_students){
+    return new Promise (async function (resolve, reject) {
+        await request.post({
+            url: 'http://localhost:8080/addStudents',
+            body: list_of_students,
+            json: true
+        }, function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                resolve(body)
+            }
+            else{
+                reject(error)
+            }
+        });
+    }).catch(error=>{
+        if(error != null){
+            console.log(error)
+        }
+    })
 }
 
 router.post('/log', async (req, res) => {
     if(req.files){
         csvData = req.files.csv.data.toString('utf8');
-        await csvtojsonfunc(csvData).then(array => {
-            if(array != undefined){
-                info = {
-                    status: "ok",
-                    updated_entries: array[0]-1,
-                    new_entries: array[1]-1
-                }
-                res.render('log', info)
-                bool = false
-            }
-        })
+        info = await csvtojsonfunc(csvData)
+        res.render('log', info)
     }
     else{
         info = {
