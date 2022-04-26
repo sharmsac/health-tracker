@@ -2,7 +2,7 @@
 
 <br />
 <div align="center">
-  <h3 align="center">Kean Health Tracker</h3>
+  <h3 align="center">Kean Health Tracker Frontend</h3>
 </div>
 
 <!-- TABLE OF CONTENTS -->
